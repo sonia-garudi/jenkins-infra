@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/bin/bash 
+
+set -x
 
 echo ${KUB_SERVER_URL}
 echo ${KUB_TOKEN}
