@@ -1,4 +1,4 @@
-@Library('jenkins-upstream-library') _
+@Library('sonia-library') _
 
 pipeline {
     agent {
