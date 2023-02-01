@@ -41,8 +41,8 @@ pipeline {
         ENABLE_FIPS = false
         ENABLE_VAULT = true
         CONFIG_TYPE = "odf"
-		KUB_SERVER_URL = ${params.KUB_SERVER_URL}
-		KUB_TOKEN = ${params.KUB_TOKEN}
+		KUB_SERVER_URL = params.KUB_SERVER_URL
+		KUB_TOKEN = params.KUB_TOKEN
 
 	 }
     stages {
