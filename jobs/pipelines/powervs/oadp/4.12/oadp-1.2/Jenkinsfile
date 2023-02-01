@@ -47,7 +47,6 @@ pipeline {
     stages {
         stage('Access OCP cluster') {
             steps {
-                validateCoStatus()
                 cloneOadpRepositories()
             }
         }        
