@@ -1,0 +1,56 @@
+@Library('jenkins-upstream-library') _
+
+pipeline {
+    agent {
+        kubernetes {
+            inheritFrom 'jenkins-agent'
+        }
+    }
+     environment {
+        //users and credentials. All must be defined in Jenkins Credentials
+        GITHUB_USER = credentials('GITHUB_USER')
+        IBMCLOUD_API_KEY = credentials('ODF_IBMCLOUD_API_KEY')
+        GITHUB_TOKEN = credentials('GITHUB_TOKEN')
+        REDHAT_USERNAME = credentials('REDHAT_USERNAME')
+        REDHAT_PASSWORD = credentials('REDHAT_PASSWORD')
+        PULL_SECRET = credentials('ODF_PULL_SECRET')
+
+        //Env constants
+        TERRAFORM_VER = "1.2.0"
+
+        IBM_CLOUD_REGION = "lon"
+        IBM_CLOUD_ZONE = "lon06"
+        SERVICE_INSTANCE_ID = "fac4755e-8aff-45f5-8d5c-1d3b58b7a229"
+
+        BASTION_IMAGE = "rhel-86"
+        RHCOS_IMAGE = "rhcos-412"
+        BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-rdr-svenkat-ocp-storage-lon06-odf-411.txt"
+        RHCOS_IMAGE_FILE = "latest-${RHCOS_IMAGE}-rdr-svenkat-ocp-storage-lon06-odf-411.txt"
+        OCP_RELEASE = "4.12"
+
+        TARGET = "deploy-openshift4-powervs-script"
+        TEMPLATE_FILE = ".${TARGET}.tfvars.template"
+        POWERVS = true
+        SCRIPT_DEPLOYMENT = true
+        WAIT_FOR_DEBUG = "1"
+
+        //ODF vars
+        PLATFORM = "powervs"
+        ODF_VERSION = "4.12"
+        TIER_TEST = "2"
+        ENABLE_FIPS = false
+        ENABLE_VAULT = true
+        CONFIG_TYPE = "odf"
+		KUB_SERVER_URL = "
+
+	 }
+    stages {
+        stage('Access OCP cluster') {
+            steps {
+                validateCoStatus()
+                cloneOadpRepositories()
+            }
+        }        
+    }
+}
+

@@ -1,0 +1,295 @@
+@Library('jenkins-upstream-library') _
+
+pipeline {
+    agent {
+        kubernetes {
+            inheritFrom 'jenkins-agent'
+        }
+    }
+    parameters {
+            string(defaultValue: '', description: 'OCP version on which OCS/ODF will be deployed', name: 'ocpVersion')
+            string(defaultValue: '', description: 'OCS version which you want to upgrade', name: 'ocsVersion')
+            string(defaultValue: '', description: 'rhceph-dev/ocs-registry Image used for deploying OCS/ODF', name: 'ocsRegistryImage')
+            string(defaultValue: '', description: 'OCS version in which you want to upgrade', name: 'ocsUpgradeVersion')
+            string(defaultValue: '', description: 'rhceph-dev/ocs-registry image of upgraded ocs version', name: 'ocsUpgradeRegistryImage')
+            string(defaultValue: '720', description: 'Enter time(in Minutes) to retain the cluster', name: 'KeepFor')
+            booleanParam(defaultValue: false, description: 'Enable/Disable Vault', name: 'Vault')
+            booleanParam(defaultValue: false, description: 'Enable/Disable Fips', name: 'Fips')
+            choice(choices: ['1', '2', '3', '4a', '4b','4c' ],name: 'TierTest')
+        }
+    environment {
+       //users and credentials. All must be defined in Jenkins Credentials
+       GITHUB_USER = credentials('GITHUB_USER')
+       IBMCLOUD_API_KEY = credentials('ODF_IBMCLOUD_API_KEY')
+       GITHUB_TOKEN = credentials('GITHUB_TOKEN')
+       REDHAT_USERNAME = credentials('REDHAT_USERNAME')
+       REDHAT_PASSWORD = credentials('REDHAT_PASSWORD')
+       PULL_SECRET = credentials('ODF_PULL_SECRET')
+
+       // Parameters
+       OCP_RELEASE = "${params.ocpVersion}"
+       ODF_VERSION = "${params.ocsVersion}"
+       UPGRADE_OCS_VERSION = "${params.ocsUpgradeVersion}"
+       OCS_REGISTRY_IMAGE = "${params.ocsRegistryImage}"
+       UPGRADE_OCS_REGISTRY = "${params.ocsUpgradeRegistryImage}"
+       ENABLE_VAULT = "${params.Vault}"
+       ENABLE_FIPS = "${params.Fips}"
+       TIER_TEST = "${params.TierTest}"
+       TIMEOUT = "${params.KeepFor}"
+
+       //Env constants
+       TERRAFORM_VER = "1.2.0"
+
+       IBM_CLOUD_REGION = "syd"
+       IBM_CLOUD_ZONE = "syd05"
+       SERVICE_INSTANCE_ID = "22bd163a-c87c-4cea-90d2-58f7794caa43"
+
+       TARGET = "deploy-openshift4-powervs-script"
+       TEMPLATE_FILE = ".${TARGET}.tfvars.template"
+       POWERVS = true
+       SCRIPT_DEPLOYMENT = true
+       WAIT_FOR_DEBUG = "1"
+
+       //ODF vars
+       PLATFORM = "powervs"
+       CONFIG_TYPE = "odf"
+
+	}
+    stages {
+        stage('Setup Common Environment Variables') {
+            steps {
+                setupCommonEnvironmentVariables()
+                setupClusterConfig("${CONFIG_TYPE}")
+            }
+        }
+        stage('Setting RHCOS and RHEL Images as per OCP version') {
+            steps {
+                script {
+                    switch (env.OCP_RELEASE) {
+                        case "4.6":
+                            env.BASTION_IMAGE = "rhel-83"
+                            env.RHCOS_IMAGE = "rhcos-46"
+                            break
+                        case "4.7":
+                            env.BASTION_IMAGE = "rhel-83"
+                            env.RHCOS_IMAGE = "rhcos-47"
+                            break
+                        case "4.8":
+                            env.BASTION_IMAGE = "rhel-83"
+                            env.RHCOS_IMAGE = "rhcos-48"
+                            break
+                        case "4.9":
+                            env.BASTION_IMAGE = "rhel-84"
+                            env.RHCOS_IMAGE = "rhcos-49"
+                            break
+                        case "4.10":
+                            env.BASTION_IMAGE = "rhel-84"
+                            env.RHCOS_IMAGE = "rhcos-410"
+                            break
+                        case "4.11":
+                            env.BASTION_IMAGE = "rhel-85"
+                            env.RHCOS_IMAGE = "rhcos-411"
+                            break
+                        default:
+                             env.BASTION_IMAGE = "rhel-86"
+                             env.RHCOS_IMAGE = "rhcos-412"
+                    }
+
+                    BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-rdr-ocp-storage-sydney05-odf.txt"
+                    RHCOS_IMAGE_FILE = "latest-${RHCOS_IMAGE}-rdr-ocp-storage-sydney05-odf.txt"
+                }
+            }
+        }
+        stage('pull artifact') {
+            steps {
+                getArtifacts("mirror-openshift-release", "latest-${OCP_RELEASE}-build.txt" )
+                getArtifacts("powervs/poll-powervs-images", "${BASTION_IMAGE_FILE}")
+                getArtifacts("powervs/poll-powervs-images", "${RHCOS_IMAGE_FILE}" )
+            }
+        }
+        //Checkout the installer git repo
+        stage('Prepare Terraform Template') {
+            steps {
+                script {
+                    ansiColor('xterm') {
+                        echo ""
+                    }
+                    try
+                    {
+                        pullSecret()
+                        env.OPENSHIFT_IMAGE = ""
+                        env.OCP_RELEASE_TAG = ""
+                        if (fileExists("deploy/artifactory/latest-${OCP_RELEASE}-build.txt")) {
+                            env.OPENSHIFT_IMAGE = readFile "deploy/artifactory/latest-${OCP_RELEASE}-build.txt"
+                            env.OPENSHIFT_IMAGE = env.OPENSHIFT_IMAGE.trim()
+                            env.OCP_RELEASE_TAG = env.OPENSHIFT_IMAGE.split(":")[1].trim()
+                        }
+                        else {
+                            echo "latest-${OCP_RELEASE}-build.txt file does not exist. Please check mirror-openshift-release job"
+                            throw err
+                        }
+                        if (fileExists("deploy/artifactory/${BASTION_IMAGE_FILE}")) {
+                            env.BASTION_IMAGE_NAME = readFile "deploy/artifactory/${BASTION_IMAGE_FILE}"
+                            env.BASTION_IMAGE_NAME = env.BASTION_IMAGE_NAME.trim()
+                        }
+                        else{
+                            echo "${BASTION_IMAGE_FILE} file does not exist. Please check poll-powervs-job"
+                            throw err
+                        }
+                        if (fileExists("deploy/artifactory/${RHCOS_IMAGE_FILE}")) {
+                            env.RHCOS_IMAGE_NAME = readFile "deploy/artifactory/${RHCOS_IMAGE_FILE}"
+                            env.RHCOS_IMAGE_NAME = env.RHCOS_IMAGE_NAME.trim()
+                        }
+                        else{
+                            echo "${RHCOS_IMAGE_FILE} file does not exist. Please check poll-powervs-job"
+                            throw err
+                        }
+                    }
+                    catch (err)
+                    {
+                        echo 'Error ! Template preparation failed !'
+                        env.FAILED_STAGE=env.STAGE_NAME
+                        throw err
+                    }
+                }
+            }
+        }
+        stage('Initialize Environment') {
+            steps {
+                initializeEnvironment("us-south", "ocs-resource-group")
+                script{
+                    env.SYSTEM_TYPE = "s922"
+                }
+            }
+        }
+        stage('Setup Terraform Plugin') {
+            steps {
+                setupTerraformPlugin()
+            }
+        }
+        stage('Deploy OCP Cluster') {
+            steps {
+                deployCluster()
+            }
+        }
+        stage('Setup Kubectl') {
+            steps {
+                setupKubeconfigOcp4()
+            }
+        }
+        stage('Run ODF Setup script') {
+            steps {
+                odfAuthYaml()
+                odfRunSetupScript()
+            }
+        }
+        stage('Run ODF deploy script') {
+            steps {
+                script {
+                    ansiColor('xterm') {
+                        echo ""
+                    }
+                    try {
+                        sh '''
+                            cd ${WORKSPACE}/scripts/odf
+                            chmod +x run-odf-deploy.sh
+                            ./run-odf-deploy.sh
+                        '''
+                    }
+                    catch (err) {
+                        echo 'Error ! ODF deploy script failed!'
+                        env.FAILED_STAGE=env.STAGE_NAME
+                        throw err
+                    }
+                }
+            }
+        }
+        stage('Capture output of multiple commands to verify ODF deployment') {
+            steps {
+                odfRunCommands()
+            }
+        }
+        stage('Upgrading ODF') {
+            steps {
+                script {
+                        ansiColor('xterm') {
+                            echo ""
+                        }
+                        try {
+                            sh '''
+                               cd ${WORKSPACE}/scripts/odf
+                               chmod +x run-odf-upgrade.sh
+                               ./run-odf-upgrade.sh
+                               '''
+                            env.ODF_FULL_BUILD = readFile "${WORKSPACE}/odf-full-build.txt"
+
+                        }
+                        catch (err) {
+                            echo 'Error ! ODF Upgrade using upgrade-ocs-ci.sh failed!'
+                            env.FAILED_STAGE=env.STAGE_NAME
+                            throw err
+                        }
+                }
+            }
+        }
+        stage('Capture output of multiple commands to verify after ODF upgrade') {
+            steps {
+                odfRunCommands()
+            }
+        }
+        stage('Run ODF tier tests') {
+            steps {
+                script {
+                    ansiColor('xterm') {
+                        echo ""
+                    }
+                    try {
+                        sh '''
+                            cd ${WORKSPACE}/scripts/odf
+                            chmod +x run-tier-tests.sh
+                            ./run-tier-tests.sh
+                        '''
+                    }
+                    catch (err) {
+                        echo 'Error ! Tier test script failed!'
+                        env.FAILED_STAGE=env.STAGE_NAME
+                        throw err
+                    }
+                 }
+             }
+        }
+        stage('Waiting to timeout') {
+            steps {
+                script {
+                    ansiColor('xterm') {
+                        echo ""
+                    }
+                    try {
+                        TIMEOUT_MIN = TIMEOUT.toInteger()
+                        if ( TIMEOUT_MIN != 0 ){
+                            TIMEOUT_SEC=TIMEOUT_MIN*60
+                            echo "HOLDING THE CLUSTER TEAR DOWN FOR ${TIMEOUT_MIN} MINUTES"
+                            sleep TIMEOUT_SEC
+                        }
+                    }
+                    catch (err) {
+                        echo 'Error ! Timeout stage failed!'
+                        env.FAILED_STAGE=env.STAGE_NAME
+                        throw err
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            archiveAllArtifacts("results.tar.gz", "tier${TIER_TEST}-summary.txt","odf-commands.txt")
+            cleanupOcp4Cluster()
+            checkInfraError()
+            odfProcessTierTestResults()
+            cleanupPowerVSResources()
+            notifyBySlack(currentBuild.result, env.MESSAGE)
+            cleanWs()
+        }
+    }
+}
