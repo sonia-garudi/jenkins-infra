@@ -45,6 +45,7 @@ pipeline {
         CONFIG_TYPE = "odf"
 		KUB_SERVER_URL = "${params.KUB_SERVER_URL}"
 		KUB_TOKEN = "${params.KUB_TOKEN}"
+		BASTION_IP = "${params.BASTION_IP}"
 
 	 }
     stages {
