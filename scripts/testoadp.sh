@@ -15,3 +15,5 @@ oc get nodes
 
 rm -rf oadp-qe-automation
 git clone https://Sonia-Garudi1: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@github.ibm.com/Sonia-Garudi1/oadp-qe-automation
+cd oadp-qe-automation
+ls

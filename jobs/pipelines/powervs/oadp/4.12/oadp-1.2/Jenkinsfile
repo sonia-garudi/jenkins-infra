@@ -43,9 +43,9 @@ pipeline {
         ENABLE_FIPS = false
         ENABLE_VAULT = true
         CONFIG_TYPE = "odf"
-		KUB_SERVER_URL = "${params.KUB_SERVER_URL}"
-		KUB_TOKEN = "${params.KUB_TOKEN}"
-		BASTION_IP = "${params.BASTION_IP}"
+		KUB_SERVER_URL = credentials('OADP_KUB_SERVER_URL')
+		KUB_TOKEN = credentials('OADP_KUB_TOKEN')
+		BASTION_IP = credentials('OADP_BASTION_IP')
 
 	 }
     stages {
