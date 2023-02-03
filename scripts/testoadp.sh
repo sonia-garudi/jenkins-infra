@@ -25,6 +25,14 @@ export GOROOT=/usr/local/go
 export PATH=/usr/local/go/bin:$PATH
 export GOBIN=/usr/local/go/bin
 
+echo 'Login to OCP cluster'
+cd ${WORKSPACE}
+wget https://mirror.openshift.com/pub/openshift-v4/ppc64le/clients/ocp-dev-preview/latest-4.12/openshift-client-linux-amd64.tar.gz
+tar -xvzf openshift-client-linux-amd64.tar.gz
+export PATH=$PATH:${WORKSPACE}
+oc login --token=${KUB_TOKEN} --server=https://api.${KUB_SERVER_URL}:6443 --insecure-skip-tls-verify
+oc get nodes
+
 #Run e2e
 echo 'Run E2E'
 cd ${WORKSPACE}
@@ -37,15 +45,6 @@ EXTRA_GINKGO_PARAMS="--ginkgo.focus=Django\sapplication\swith\sBSL&VSL"  /bin/ba
 cat test.log
 
 exit
-
-
-echo 'Login to OCP cluster'
-cd ${WORKSPACE}
-wget https://mirror.openshift.com/pub/openshift-v4/ppc64le/clients/ocp-dev-preview/latest-4.12/openshift-client-linux-amd64.tar.gz
-tar -xvzf openshift-client-linux-amd64.tar.gz
-export PATH=$PATH:${WORKSPACE}
-oc login --token=${KUB_TOKEN} --server=https://api.${KUB_SERVER_URL}:6443 --insecure-skip-tls-verify
-oc get nodes
 
 sed -i 's/\r//' ${INSTALL_OPTS_FILE}
 source ${INSTALL_OPTS_FILE}
