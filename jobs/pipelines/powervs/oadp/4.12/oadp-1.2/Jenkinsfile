@@ -46,6 +46,9 @@ pipeline {
 		KUB_SERVER_URL = credentials('OADP_KUB_SERVER_URL')
 		KUB_TOKEN = credentials('OADP_KUB_TOKEN')
 		BASTION_IP = credentials('OADP_BASTION_IP')
+		GIT_USERNAME = credentials('OADP_GIT_USERNAME')
+		GIT_TOKEN =  credentials('OADP_GIT_TOKEN')
+		INSTALL_OPTS_FILE = credentials('OADP_INSTALL_OPTS_FILE')
 
 	 }
     stages {
