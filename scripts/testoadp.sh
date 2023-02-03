@@ -24,8 +24,8 @@ export GOBIN=/usr/local/go/bin
 echo 'Run E2E'
 cd ${WORKSPACE}
 git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-e2e-qe.git && cd oadp-e2e-qe
-apk update && apk add bash ca-certificates git gcc g++ libc-dev
-go install github.com/onsi/ginkgo/v2/ginkgo@latest && go install github.com/onsi/gomega/...
+sudo apt update && sudo apt install build-essential -y
+go install github.com/onsi/ginkgo/v2/ginkgo@latest
 
 
 exit
