@@ -1,38 +1,24 @@
 #!/bin/bash +x
 
 cd ${WORKSPACE}
-ls deploy && rm -rf deploy
-mkdir deploy && cd deploy
-echo ${KUB_TOKEN} > id_rsa
 echo "${BASTION_IP} api.${KUB_SERVER_URL} oauth-openshift.apps.${KUB_SERVER_URL}" >> /etc/hosts
 
-#Login to bastion
-echo 'Log in to bastion node'
-ssh -q -i id_rsa -o StrictHostKeyChecking=no root@${BASTION_IP} exit
-rc=$?
-if [ $rc -ne 0 ] ; then
-  echo 'Unable to access the cluster. You may delete the VMs manually'
-  exit 1
-else
-  ssh -q -i id_rsa -o StrictHostKeyChecking=no root@${BASTION_IP}
-fi
-
 #Install golang
-cd /root
 git clone https://github.com/ocp-power-automation/ocp4-playbooks-extras
 cd ocp4-playbooks-extras
 cp examples/go_lang_installation_vars.yaml go_lang_installation_vars.yaml 
-sed -i "s|golang_tarball:.*$|golang_tarball: https://dl.google.com/go/go1.18.linux-ppc64le.tar.gz|g" go_lang_installation_vars.yaml
+sed -i "s|golang_tarball:.*$|golang_tarball: https://dl.google.com/go/go1.18.linux-amd64.tar.gz|g" go_lang_installation_vars.yaml
 sed -i "s|golang_installation:.*$|golang_installation: true|g" go_lang_installation_vars.yaml
 cp examples/inventory ./e2e_inventory
 ansible-playbook  -i e2e_inventory -e @go_lang_installation_vars.yaml playbooks/golang-installation.yml
 exit
 
-#wget https://mirror.openshift.com/pub/openshift-v4/ppc64le/clients/ocp-dev-preview/latest-4.12/openshift-client-linux-amd64.tar.gz
-#tar -xvzf openshift-client-linux-amd64.tar.gz
-#export PATH=$PATH:${WORKSPACE}
-#oc login --token=${KUB_TOKEN} --server=https://api.${KUB_SERVER_URL}:6443 --insecure-skip-tls-verify
-#oc get nodes
+cd ${WORKSPACE}
+wget https://mirror.openshift.com/pub/openshift-v4/ppc64le/clients/ocp-dev-preview/latest-4.12/openshift-client-linux-amd64.tar.gz
+tar -xvzf openshift-client-linux-amd64.tar.gz
+export PATH=$PATH:${WORKSPACE}
+oc login --token=${KUB_TOKEN} --server=https://api.${KUB_SERVER_URL}:6443 --insecure-skip-tls-verify
+oc get nodes
 
 #Install OADP operator
 echo 'Clone oadp-qe-automation repository'
