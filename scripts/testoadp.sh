@@ -35,7 +35,7 @@ cd ${WORKSPACE} && rm -rf oadp-qe-automation
 git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-qe-automation
 	
 #Install OADP operator
-if [ $INSTALL_OADP -eq true ] ; then
+if [[ "$INSTALL_OADP" == "true" ]] ; then
 	echo 'Install OADP operator'	
 	cd ${WORKSPACE} && cd oadp-qe-automation
 	bash operator/oadp/deploy_oadp.sh 2>&1 | tee deploy-oadp.log
@@ -46,7 +46,7 @@ if [ $INSTALL_OADP -eq true ] ; then
 	oc get csv -n openshift-adp
 fi
 
-if [ $INSTALL_VOLSYNC -eq true ] ; then
+if [[ "$INSTALL_VOLSYNC" == "true" ]] ; then
 	echo 'Install Volsync operator'
 	cd ${WORKSPACE} && cd oadp-qe-automation
 	bash operator/volsync/deploy_volsync.sh 2>&1 | tee deploy-volsync.log
