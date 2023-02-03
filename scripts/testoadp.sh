@@ -20,6 +20,16 @@ export GOROOT=/usr/local/go
 export PATH=/usr/local/go/bin:$PATH
 export GOBIN=/usr/local/go/bin
 
+#Run e2e
+echo 'Run E2E'
+cd ${WORKSPACE}
+git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-e2e-qe.git && cd oadp-e2e-qe
+sudo yum update -y && sudo yum install gcc
+go install github.com/onsi/ginkgo/v2/ginkgo@latest && go install github.com/onsi/gomega/...
+
+
+exit
+
 
 echo 'Login to OCP cluster'
 cd ${WORKSPACE}
@@ -59,3 +69,6 @@ fi
 
 #Run e2e
 echo 'Run E2E'
+git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-e2e-qe.git && cd oadp-e2e-qe
+sudo yum update -y && sudo yum install gcc
+go install github.com/onsi/ginkgo/v2/ginkgo@latest && go install github.com/onsi/gomega/...
