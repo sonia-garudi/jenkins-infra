@@ -29,7 +29,7 @@ export PATH=$PATH:${WORKSPACE}
 oc login --token=${KUB_TOKEN} --server=https://api.${KUB_SERVER_URL}:6443 --insecure-skip-tls-verify
 oc get nodes
 
-
+sed -i 's/\r//' ${INSTALL_OPTS_FILE}
 source ${INSTALL_OPTS_FILE}
 cd ${WORKSPACE} && rm -rf oadp-qe-automation
 git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-qe-automation
