@@ -1,6 +1,7 @@
 #!/bin/bash +x
 
 cd ${WORKSPACE}
+ls deploy && rm -rf deploy
 mkdir deploy && cd deploy
 echo ${KUB_TOKEN} > id_rsa
 echo "${BASTION_IP} api.${KUB_SERVER_URL} oauth-openshift.apps.${KUB_SERVER_URL}" >> /etc/hosts
