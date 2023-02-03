@@ -11,7 +11,6 @@ sed -i "s|golang_tarball:.*$|golang_tarball: https://dl.google.com/go/go1.18.lin
 sed -i "s|golang_installation:.*$|golang_installation: true|g" go_lang_installation_vars.yaml
 cp examples/inventory ./e2e_inventory
 ansible-playbook  -i e2e_inventory -e @go_lang_installation_vars.yaml playbooks/golang-installation.yml
-exit
 
 cd ${WORKSPACE}
 wget https://mirror.openshift.com/pub/openshift-v4/ppc64le/clients/ocp-dev-preview/latest-4.12/openshift-client-linux-amd64.tar.gz
@@ -22,7 +21,7 @@ oc get nodes
 
 #Install OADP operator
 echo 'Clone oadp-qe-automation repository'
-rm -rf oadp-qe-automation
+cd ${WORKSPACE} && rm -rf oadp-qe-automation
 export GOROOT=/usr/local/go
 export PATH=/usr/local/go/bin:$PATH
 export GOBIN=/usr/local/go/bin
