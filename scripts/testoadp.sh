@@ -7,7 +7,7 @@ echo 'Install golang'
 git clone https://github.com/ocp-power-automation/ocp4-playbooks-extras
 cd ocp4-playbooks-extras
 cp examples/go_lang_installation_vars.yaml go_lang_installation_vars.yaml 
-sed -i "s|golang_tarball:.*$|golang_tarball: https://dl.google.com/go/go1.18.linux-amd64.tar.gz|g" go_lang_installation_vars.yaml
+sed -i "s|golang_tarball_url:.*$|golang_tarball_url: https://dl.google.com/go/go1.18.linux-amd64.tar.gz|g" go_lang_installation_vars.yaml
 sed -i "s|golang_installation:.*$|golang_installation: true|g" go_lang_installation_vars.yaml
 cp examples/inventory ./e2e_inventory
 ansible-playbook  -i e2e_inventory -e @go_lang_installation_vars.yaml playbooks/golang-installation.yml
@@ -24,7 +24,7 @@ export GOBIN=/usr/local/go/bin
 echo 'Run E2E'
 cd ${WORKSPACE}
 git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-e2e-qe.git && cd oadp-e2e-qe
-sudo yum update -y && sudo yum install gcc
+apk update && apk add bash ca-certificates git gcc g++ libc-dev
 go install github.com/onsi/ginkgo/v2/ginkgo@latest && go install github.com/onsi/gomega/...
 
 
