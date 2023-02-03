@@ -3,6 +3,11 @@
 cd ${WORKSPACE}
 echo "${BASTION_IP} api.${KUB_SERVER_URL} oauth-openshift.apps.${KUB_SERVER_URL}" >> /etc/hosts
 
+echo $OADP_CREDS_FILE > ${WORKSPACE}/aws_creds
+
+sed -i 's/\r//' ${INSTALL_OPTS_FILE}
+source ${INSTALL_OPTS_FILE}
+
 echo 'Install golang'
 git clone https://github.com/ocp-power-automation/ocp4-playbooks-extras
 cd ocp4-playbooks-extras
@@ -23,10 +28,12 @@ export GOBIN=/usr/local/go/bin
 #Run e2e
 echo 'Run E2E'
 cd ${WORKSPACE}
-git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-e2e-qe.git && cd oadp-e2e-qe
+git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-e2e-qe.git
+cd oadp-e2e-qe
 sudo apt update && sudo apt install build-essential -y
 go install github.com/onsi/ginkgo/v2/ginkgo@latest
-
+EXTRA_GINKGO_PARAMS="--ginkgo.focus=Django\sapplication\swith\sBSL&VSL"  /bin/bash test_settings/scripts/test_runner.sh | tee test.log
+cat test.log
 
 exit
 
@@ -67,8 +74,3 @@ if [[ "$INSTALL_VOLSYNC" == "true" ]] ; then
 	oc get csv -n openshift-adp
 fi
 
-#Run e2e
-echo 'Run E2E'
-git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-e2e-qe.git && cd oadp-e2e-qe
-sudo yum update -y && sudo yum install gcc
-go install github.com/onsi/ginkgo/v2/ginkgo@latest && go install github.com/onsi/gomega/...

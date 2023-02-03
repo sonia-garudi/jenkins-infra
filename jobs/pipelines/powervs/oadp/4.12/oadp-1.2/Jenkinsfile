@@ -49,6 +49,7 @@ pipeline {
 		GIT_USERNAME = credentials('OADP_GIT_USERNAME')
 		GIT_TOKEN =  credentials('OADP_GIT_TOKEN')
 		INSTALL_OPTS_FILE = credentials('OADP_INSTALL_OPTS_FILE')
+		OADP_CREDS_FILE = credentials('OADP_CREDS_FILE')
 
 	 }
     stages {
