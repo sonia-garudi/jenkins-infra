@@ -3,11 +3,6 @@
 cd ${WORKSPACE}
 echo "${BASTION_IP} api.${KUB_SERVER_URL} oauth-openshift.apps.${KUB_SERVER_URL}" >> /etc/hosts
 
-echo $OADP_CREDS_FILE > ${WORKSPACE}/aws_creds
-
-sed -i 's/\r//' ${INSTALL_OPTS_FILE}
-source ${INSTALL_OPTS_FILE}
-
 echo 'Install golang'
 git clone https://github.com/ocp-power-automation/ocp4-playbooks-extras
 cd ocp4-playbooks-extras
@@ -25,29 +20,26 @@ export GOROOT=/usr/local/go
 export PATH=/usr/local/go/bin:$PATH
 export GOBIN=/usr/local/go/bin
 
-echo 'Login to OCP cluster'
+echo 'Try login to OCP cluster'
 cd ${WORKSPACE}
+echo 'Download oc client'
 wget https://mirror.openshift.com/pub/openshift-v4/ppc64le/clients/ocp-dev-preview/latest-4.12/openshift-client-linux-amd64.tar.gz
 tar -xvzf openshift-client-linux-amd64.tar.gz
 export PATH=$PATH:${WORKSPACE}
 oc login --token=${KUB_TOKEN} --server=https://api.${KUB_SERVER_URL}:6443 --insecure-skip-tls-verify
+rc=$?
+if [ $rc -ne 0 ] ; then
+  echo 'Login to cluster failed'
+  exit
+fi
 oc get nodes
 
-#Run e2e
-echo 'Run E2E'
-cd ${WORKSPACE}
-rm -rf oadp-e2e-qe
-git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-e2e-qe.git
-cd oadp-e2e-qe
-sudo apt update && sudo apt install build-essential -y
-go install github.com/onsi/ginkgo/v2/ginkgo@v2.6.1
-EXTRA_GINKGO_PARAMS="--ginkgo.focus=Django\sapplication\swith\sBSL&VSL"  /bin/bash test_settings/scripts/test_runner.sh | tee test.log
-cat test.log
 
-exit
+echo $OADP_CREDS_FILE > ${WORKSPACE}/aws_creds
 
 sed -i 's/\r//' ${INSTALL_OPTS_FILE}
 source ${INSTALL_OPTS_FILE}
+
 cd ${WORKSPACE} && rm -rf oadp-qe-automation
 git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-qe-automation
 	
@@ -74,3 +66,19 @@ if [[ "$INSTALL_VOLSYNC" == "true" ]] ; then
 	oc get csv -n openshift-adp
 fi
 
+#Run e2e
+echo 'Run E2E'
+cd ${WORKSPACE}
+rm -rf oadp-e2e-qe
+git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-e2e-qe.git
+echo 'Clone OCP deployer dependency'
+cd ${WORKSPACE}
+git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-apps-deployer.git
+cp -R ${WORKSPACE}/oadp-apps-deployer/src/ocpdeployer ${WORKSPACE}/oadp-e2e-qe/sample-applications/
+cd ${WORKSPACE}/oadp-e2e-qe
+echo 'Install gcc and ginkgo dependenicies'
+sudo apt update && sudo apt install build-essential -y
+go install github.com/onsi/ginkgo/v2/ginkgo@v2.6.1
+echo 'Run e2e suite'
+EXTRA_GINKGO_PARAMS="--ginkgo.focus=Django\sapplication\swith\sBSL&VSL"  /bin/bash test_settings/scripts/test_runner.sh | tee test.log
+cat test.log
