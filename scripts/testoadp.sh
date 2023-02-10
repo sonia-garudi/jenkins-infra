@@ -67,18 +67,21 @@ if [[ "$INSTALL_VOLSYNC" == "true" ]] ; then
 fi
 
 #Run e2e
-echo 'Run E2E'
-cd ${WORKSPACE}
-rm -rf oadp-e2e-qe
-git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-e2e-qe.git
-echo 'Clone OCP deployer dependency'
-cd ${WORKSPACE}
-git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-apps-deployer.git
-cp -R ${WORKSPACE}/oadp-apps-deployer/src/ocpdeployer ${WORKSPACE}/oadp-e2e-qe/sample-applications/
-cd ${WORKSPACE}/oadp-e2e-qe
-echo 'Install gcc and ginkgo dependenicies'
-sudo apt update && sudo apt install build-essential -y
-go install github.com/onsi/ginkgo/v2/ginkgo@v2.6.1
-echo 'Run e2e suite'
-EXTRA_GINKGO_PARAMS="--ginkgo.focus=Django\sapplication\swith\sBSL&VSL"  /bin/bash test_settings/scripts/test_runner.sh | tee test.log
-cat test.log
+if [[ "$RUN_E2E" == "true" ]] ; then
+	echo 'Run E2E'
+	cd ${WORKSPACE}
+	rm -rf oadp-e2e-qe
+	git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-e2e-qe.git
+	echo 'Clone OCP deployer dependency'
+	cd ${WORKSPACE}
+	git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-apps-deployer.git
+	cp -R ${WORKSPACE}/oadp-apps-deployer/src/ocpdeployer ${WORKSPACE}/oadp-e2e-qe/sample-applications/
+	cd ${WORKSPACE}/oadp-e2e-qe
+	echo 'InstallE2E dependenicies'
+	sudo apt update && sudo apt install build-essential -y
+	go install github.com/onsi/ginkgo/v2/ginkgo@v2.6.1
+	pip install kubernetes
+	echo 'Run e2e suite'
+	EXTRA_GINKGO_PARAMS="--ginkgo.focus=Django\sapplication\swith\sBSL&VSL"  /bin/bash test_settings/scripts/test_runner.sh | tee test.log
+	cat test.log
+fi
