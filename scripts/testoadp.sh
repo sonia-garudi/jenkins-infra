@@ -75,13 +75,15 @@ if [[ "$RUN_E2E" == "true" ]] ; then
 	echo 'Clone OCP deployer dependency'
 	cd ${WORKSPACE}
 	git clone https://${GIT_USERNAME}:${GIT_TOKEN}@github.ibm.com/Sonia-Garudi1/oadp-apps-deployer.git
+	cd oadp-apps-deployer && git checkout master && cd ${WORKSPACE}
 	cp -R ${WORKSPACE}/oadp-apps-deployer/src/ocpdeployer ${WORKSPACE}/oadp-e2e-qe/sample-applications/
 	cd ${WORKSPACE}/oadp-e2e-qe
 	echo 'InstallE2E dependenicies'
 	sudo apt update && sudo apt install build-essential -y
-	go install github.com/onsi/ginkgo/v2/ginkgo@v2.6.1
+	go install github.com/onsi/ginkgo/v2/ginkgo@v2.7.0
 	pip install kubernetes
 	echo 'Run e2e suite'
-	EXTRA_GINKGO_PARAMS="--ginkgo.focus=Django\sapplication\swith\sBSL&VSL"  /bin/bash test_settings/scripts/test_runner.sh | tee test.log
+	sed "s/MUST_GATHER_BUILD=\"must_gather_image\"/MUST_GATHER_BUILD=\"brew.registry.redhat.io\/rh-osbs\/oadp-oadp-mustgather-rhel8:1.1.2-26\"/" test_settings/scripts/test_runner.sh
+	EXTRA_GINKGO_PARAMS="--ginkgo.focus=OADP-117"  /bin/bash test_settings/scripts/test_runner.sh | tee test.log
 	cat test.log
 fi
