@@ -51,6 +51,7 @@ if [[ "$INSTALL_OADP" == "true" ]] ; then
 	rc=$?
 	if [ $rc -ne 0 ] ; then
 	  echo 'OADP operator installation failed'
+	  exit 1
 	fi
 	oc get csv -n openshift-adp
 fi
@@ -62,6 +63,7 @@ if [[ "$INSTALL_VOLSYNC" == "true" ]] ; then
 	rc=$?
 	if [ $rc -ne 0 ] ; then
 	  echo 'Volsync operator installation failed'
+	  exit 1
 	fi
 	oc get csv -n openshift-adp
 fi
@@ -83,7 +85,7 @@ if [[ "$RUN_E2E" == "true" ]] ; then
 	go install github.com/onsi/ginkgo/v2/ginkgo@v2.7.0
 	pip install kubernetes
 	echo 'Run e2e suite'
-	sed "s/MUST_GATHER_BUILD=\"must_gather_image\"/MUST_GATHER_BUILD=\"brew.registry.redhat.io\/rh-osbs\/oadp-oadp-mustgather-rhel8:1.1.2-26\"/" test_settings/scripts/test_runner.sh
-	EXTRA_GINKGO_PARAMS="--ginkgo.focus=OADP-117"  /bin/bash test_settings/scripts/test_runner.sh | tee test.log
+	sed -i "s/MUST_GATHER_BUILD=\"must_gather_image\"/MUST_GATHER_BUILD=\"brew.registry.redhat.io\/rh-osbs\/oadp-oadp-mustgather-rhel8:1.1.2-26\"/" test_settings/scripts/test_runner.sh
+	EXTRA_GINKGO_PARAMS="--ginkgo.focus=Verify\slog\slevel\spanic"  /bin/bash test_settings/scripts/test_runner.sh | tee test.log
 	cat test.log
 fi
